@@ -22,8 +22,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 /*
+Normally flot draws the x axis at the bottom or top of the graph and the y axis at the left or right. This plugin will draw the axis through the origin
+(i.e. 0,0) if that point is somewhere in the middle of the plot. Otherwise it will draw axis at the bottom and left as normal.
 
+usage -
+    var options = {
+        crossOrigin: true
+    };
 
+    $.plot($("#placeholder), [{ data: [...] }}], options);
+
+Individual axis can be turned off by setting crossOrigin to false for that particular axis -
+
+    var options = {
+        crossOrigin: true,
+        xaxis: {
+            crossOrigin: false
+        }
+    };
+
+Now only the yaxis will be drawn as crossing the origin with the xaxis draw at the top or bottom as normal.
+Note: this currently only effects the primary x and y axes. If you have multiple axes, they will not be affected.
 */
 
 (function ($) {
