@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Origin Axis Example</title>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
+    <script type="text/javascript" src="https://raw.github.com/flot/flot/master/jquery.flot.js"></script>
+    <script type="text/javascript" src="https://raw.github.com/flot/flot/master/jquery.flot.selection.js"></script>
+    <script type="text/javascript" src="https://raw.github.com/burlandm/Flot-Origin-Axis/master/jquery.flot.originaxis.js"></script>
+    <script type="text/javascript">
+
+        $(function () {
+            var data = [
+                [-2.263189352, -26.07674966],
+                [-1.103810127, -33.02086135],
+                [-4.154645857, -22.78913668],
+                [-19.42115961, 3.216845015],
+                [1.13113291, 19.32546567],
+                [-56.9405708, 22.17147898],
+                [26.61013394, -16.66337248],
+                [56.1421089, 53.8363305]
+            ];
+
+            var options = {
+                crossOrigin: true,
+                xaxis: {
+                    autoscaleMargin: 0.04
+                },
+                yaxis: {
+                    autoscaleMargin: 0.02
+                },
+                selection: {
+                    mode: "xy"
+                },
+            };
+
+            var placeholder = $("#placeholder");
+
+            placeholder.bind("plotselected", function (event, ranges) {
+                $.plot(placeholder, [{ data: data, points: { show: true } }],
+                    $.extend(true, {}, options, {
+                        xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+                        yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+                    }));
+            });
+
+            $("#resetButton").click(function () {
+                $.plot(placeholder, [{ data: data, points: { show: true } }], options);
+            });
+            $.plot(placeholder, [{ data: data, points: { show: true } }], options);
+        });
+
+    </script>
+    <style>
+        body
+        {
+            font-family: Arial;
+        }
+    </style>
+</head>
+<body>
+    <p>A simple example of the origin axis plugin. Select a section of the plot to zoom in. Click the reset button to reset the plot.</p>
+    <div id="placeholder" style="width:500px; height:350px"></div>
+    <input id="resetButton" type="button" value="Reset Plot" />
+</body>
+</html>
