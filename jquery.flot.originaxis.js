@@ -52,7 +52,6 @@ Note: this currently only effects the primary x and y axes. If you have multiple
 
         function processOptions(plot, options) {
             if (options.crossOrigin) {
-                options.grid.borderWidth = 0;
                 if (options.xaxis.crossOrigin) {
                     options.xaxes[0].show = false;
                     options.xaxes[0].reserveSpace = true;
@@ -68,77 +67,40 @@ Note: this currently only effects the primary x and y axes. If you have multiple
     }
 
     function drawXAxis(plot, ctx) {
-        ctx.save();
-        var offset = plot.getPlotOffset();
-        var origin = plot.pointOffset({ x: 0, y: 0 });
-        var axis = plot.getAxes().xaxis;
-        var opt = plot.getOptions();
-   
-        ctx.lineWidth = 1;
-        var yloc = Math.min(Math.max(origin.top, offset.top),plot.height() + offset.top);
-
-        // draw axis
-        ctx.strokeStyle = opt.grid.borderColor;
-        ctx.beginPath();
-        ctx.moveTo(offset.left, yloc);
-        ctx.lineTo(plot.width() + offset.left, yloc);
-        ctx.stroke();
-
-        // draw ticks and labels
-        var f = axis.font;
-        ctx.font = f.style + " " + f.variant + " " + f.weight + " " + f.size + "px " + f.family;
-        ctx.textAlign = "start";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = axis.options.color;
-        ctx.strokeStyle = axis.options.tickColor || $.color.parse(axis.options.color).scale('a', 0.22).toString();
-        ctx.beginPath();
-        for (i = 0; i < axis.ticks.length; ++i) {
-            var tick = axis.ticks[i];
-            var v = tick.v;
-            if (v < axis.min || v > axis.max)
-                continue;
-            // draw grid line
-            x = axis.p2c(v) + offset.left;
-            ctx.moveTo(x, offset.top);
-            ctx.lineTo(x, plot.height() + offset.top);
-
-            // draw labels
-            if (!tick.label)
-                continue;
-            var yOffset = 0;
-            for (k = 0; k < tick.lines.length; k++) {
-                var line = tick.lines[k];
-                var x = offset.left + axis.p2c(tick.v) - line.width / 2;
-                if (tick.v == 0)
-                    x -= line.width;
-                y = yloc + axis.box.padding;
-
-                y += line.height / 2 + yOffset;
-                yOffset += line.height;
-
-                ctx.fillText(line.text, x, y);
-            }
-        }
-        ctx.stroke();
-
-        ctx.restore();
+        drawAxis(plot, ctx, plot.getAxes().xaxis);
     }
 
     function drawYAxis(plot, ctx) {
+        drawAxis(plot, ctx, plot.getAxes().yaxis);
+    }
+
+    function drawAxis(plot, ctx, axis) {
         ctx.save();
         var offset = plot.getPlotOffset();
         var origin = plot.pointOffset({ x: 0, y: 0 });
-        var axis = plot.getAxes().yaxis;
         var opt = plot.getOptions();
+        var height = plot.height();
+        var width = plot.width();
 
         ctx.lineWidth = 1;
-        var xloc = Math.min(Math.max(origin.left, offset.left), plot.width() + offset.left);
+        var yloc = yfrom = offset.top;
+        var xloc = xfrom = offset.left;
+        var yto = offset.top + height;
+        var xto = offset.left + width;
+        if (axis.direction == "x") {
+            yloc = Math.min(Math.max(origin.top, offset.top), plot.height() + offset.top);
+            yto = yloc;
+        }
+        else {
+            xloc = Math.min(Math.max(origin.left, offset.left), plot.width() + offset.left);
+            xto = xloc;
+        }
 
         // draw axis
         ctx.strokeStyle = opt.grid.borderColor;
         ctx.beginPath();
-        ctx.moveTo(xloc, offset.top);
-        ctx.lineTo(xloc, plot.height() + offset.top);
+        ctx.moveTo(xloc, yloc);
+        ctx.lineTo(xto, yto);
         ctx.stroke();
 
         // draw ticks and labels
@@ -155,9 +117,19 @@ Note: this currently only effects the primary x and y axes. If you have multiple
             if (v < axis.min || v > axis.max) {
                 continue;
             }
-            y = axis.p2c(v) + offset.top;
-            ctx.moveTo(offset.left, y);
-            ctx.lineTo(plot.width() + offset.left, y);
+            yto = offset.top + height;
+            xto = offset.left + width;
+            aPos = axis.p2c(v); // + offset.top;
+            if (axis.direction == "x") {
+                xfrom = aPos + offset.left;
+                xto = xfrom;
+            }
+            else {
+                yfrom = aPos + offset.top;
+                yto = yfrom;
+            }
+            ctx.moveTo(xfrom, yfrom);
+            ctx.lineTo(xto, yto);
 
             // draw labels
             if (!tick.label)
@@ -165,14 +137,38 @@ Note: this currently only effects the primary x and y axes. If you have multiple
             var yOffset = 0;
             for (k = 0; k < tick.lines.length; k++) {
                 var line = tick.lines[k];
-                var y = offset.top + axis.p2c(tick.v) - tick.height / 2;
-                if (tick.v == 0) {
-                    if (options.xaxis.crossOrigin)
+                var lPos = axis.p2c(tick.v);
+                if (opt.grid.borderWidth) {
+                    if (lPos == 0) {
                         continue;
-                    y += line.height;
+                    }
+                    if (axis.direction == "x" && lPos == width) {
+                        continue;
+                    }
+                    else if (lPos == height) {
+                        continue;
+                    }
                 }
-                x = xloc - axis.box.padding - line.width;
 
+                var x = xloc - axis.box.padding - line.width;
+                var y = yloc + axis.box.padding;
+
+                if (axis.direction == "x") {
+                    x = lPos + offset.left - line.width / 2;
+                }
+                else {
+                    y = lPos + offset.top - tick.height / 2;
+                }
+
+                if (tick.v == 0) {
+                    if (axis.direction == "x") {
+                        x -= line.width;
+                    }
+                    else {
+                        if (options.xaxis.crossOrigin && origin.left > offset.left && origin.left < (width + offset.left))
+                            continue;
+                    }
+                }
                 y += line.height / 2 + yOffset;
                 yOffset += line.height;
 
@@ -199,6 +195,6 @@ Note: this currently only effects the primary x and y axes. If you have multiple
         init: init,
         options: options,
         name: "originAxis",
-        version: "0.1"
+        version: "0.2"
     });
 })(jQuery);
